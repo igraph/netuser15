@@ -17,6 +17,6 @@ You will need at least `igraph` version 1.0.0 and `igraphdata` version
 from within R, type:
 
 ```r
-install.packages("igraph", "igraphdata", "diagrammeR")
+install.packages(c("igraph", "igraphdata", "diagrammeR"))
 ```
 
