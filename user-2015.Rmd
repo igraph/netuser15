@@ -24,18 +24,32 @@ options(width = 75)
 
 ## How to follow this tutorial
 
-TODO
+Go to https://github.com/igraph/netuser15
+
+You will need at least `igraph` version `1.0.0` and `igraphdata` version
+`1.0.0`. You will also need the `DiagrammeR` package. To install them
+from within R, type:
+
+```r
+install.packages("igraph")
+install.packages("igraphdata")
+install.packages("diagrammeR")
+```
+
+
 
 ## Outline
 
 * Introduction
 * Manipulate network data
+* Questions
 
 ### BREAK
 
 * Classic graph theory: paths
 * Social network concepts: centrality, groups
 * Visualization
+* Questions
 
 ##   Why networks?
 
@@ -965,42 +979,108 @@ compare_all(dend_fast, ground_truth)
 plot_dendrogram(dend_fast)
 ```
 
-## Visualization
+# Visualization
 
-Visualization of networks, layout algorithms. Visualization of large graphs,
-using results from community structure detection. Visualization with other
-R packages, or tools, like D3.js, Gephi, etc.
+Good visualization is important for EDA.
+
+Publication quality visualization is *not* a goal for us.
+
+## Plotting parameters
+
+Can be set globally:
+
+```{r}
+igraph_options(edge.color = "black")
+data(karate)
+plot(karate)
+```
+---
+For a graph as an attribute:
+
+```{r}
+V(karate)$color <- "DarkOliveGreen"
+V(karate)$label.color <- "white"
+E(karate)$color <- "grey"
+plot(karate)
+```
+---
+As an argument to `plot()`:
+```{r}
+plot(karate, edge.color = "black", vertex.color = "#00B7FF", vertex.label.color = "black")
+```
+
+## igraph color palettes
+
+Can be set as a graph attribute:
+```{r}
+karate$palette <- categorical_pal(length(clustering))
+plot(karate, vertex.color = membership(clustering))
+```
+
+Others: `r_pal()`, `sequential_pal()`, `diverging_pal()`.
+
+## Graphical parameters for vertices
 
 TODO
 
-- Layout algorithms, force-directed
-- Trees
-- How to export to d3
-- How to export to Gephi
-- DiagrammeR
-
-## Random graph models.
+## Graphical parameters for edges 
 
 TODO
 
-Classic models, stochastic block models, mixed
-membership stochastic block models and their inference. Hierarchical
-random graphs.
-
-- Why random graphs are important
-- Classic models
-- Stochastic block models
-- Hierarchical random graphs
-
-## Statistical methods
+## Graphical parameters for the whole graph
 
 TODO
 
-Statistical methods: graph embeddings, graph matching, graphlets,
-graphons. Temporal networks and change-point detection. Connections to
-matrix factorizations.
+## Layout algorithms
 
-- Embeddings, Dan's chapter from the book
-- Graph matching, Vince's chapter from the book
-- Graphlets
-- Scan statistics for change point detection
+Layout lagorithm: place the vertices in a way, such that 
+* edges have about the same length
+* connected vertices are closer to each other
+* edges are not crossing
+
+This is really hard, often impossible!
+
+## Force-directed algorithms
+
+TODO
+
+```{r}
+```
+
+## Slightly bigger networks
+
+```{r}
+data(UKfaculty)
+UKfaculty
+plot(UKfaculty, layout = layout_with_graphopt)
+```
+
+TODO
+
+## Exporting and importing graphs
+
+`read_graph()` and `write_graph()`.
+
+File formats: TODO
+
+---
+
+Helpful packages: `rgexf`, `intergraph`, `DiagrammeR`, `networkD3`.
+
+## How to export to D3
+
+TODO
+
+## How to export to Gephi
+
+TODO
+
+## A network viz tutorial 
+
+Highly recommended:
+https://github.com/kateto/R-Network-Visualization-Workshop
+
+# Questions?
+
+### Ask a question: http://igraph.org/r/#help
+### Report a bug: http://igraph.org/r/#contribute
