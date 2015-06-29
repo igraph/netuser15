@@ -8,7 +8,7 @@
   http://igraph.github.io/netuser15/user-2015.html#1
 * For running the R markdown source, download the
   [user-2015.Rmd](user-2015.Rmd) file
-  (or close this repo), and open it in R Studio or you R IDE of choice.
+  (or clone this repo), and open it in R Studio or you R IDE of choice.
 
 ## Software needed
 
