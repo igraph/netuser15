@@ -20,6 +20,6 @@ from within R, run:
 ```r
 install.packages("igraph")
 install.packages("igraphdata")
-install.packages("diagrammeR")
+install.packages("DiagrammeR")
 ```
 
