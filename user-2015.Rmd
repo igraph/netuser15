@@ -1,0 +1,1006 @@
+---
+title: "Statistical Analysis of Network Data"
+author: "Gábor Csárdi"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation:
+    css: tweaks.css
+    highlight: pygments
+    keep_md: yes
+vignette: >
+  %\VignetteIndexEntry{Statistical Analysis of Network Data}
+  \usepackage[utf8]{inputenc}
+  %\VignetteEngine{knitr::docco_classic}
+---
+
+```{r, setup, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(
+  prompt = FALSE,
+  comment = "#>",
+  global.par = TRUE,
+  tidy = FALSE)
+options(width = 75)
+```
+
+## How to follow this tutorial
+
+TODO
+
+## Outline
+
+* Introduction
+* Manipulate network data
+
+### BREAK
+
+* Classic graph theory: paths
+* Social network concepts: centrality, groups
+* Visualization
+
+##   Why networks?
+
+Sometimes connections are important, even more important than
+(the properties of) the things they connect.
+
+## Example 1: Königsberg Bridges
+
+![](images/Konigsberg_bridges.png)
+
+-- Bogdan Giuşcă, CC BY-SA 3.0, Wikipedia
+
+## Example 2: Page Rank
+
+<img src="images/ILLUSTRATION3.PNG.png" width="80%">
+
+http://computationalculture.net/article/what_is_in_pagerank
+
+## Example 3: Matching Twitter to Facebook
+
+![](images/twitter-facebook-branding2.png)
+
+http://morganlinton.com/wp-content/uploads/2013/12/twitter-facebook-branding2.png
+
+## Example 4: Detection of groups 
+
+![](images/389px-Network_Community_Structure.svg.png)
+
+https://en.wikipedia.org/wiki/Community_structure#/media/File:Network_Community_Structure.svg
+
+<!-- ## Example 5: Detection of unusual activity -->
+
+<!-- Detection of dense parts of the network, that were not dense before. -->
+
+## About igraph
+
+* Network analysis library, written mostly in C/C++.
+* Interface to R and Python
+* https://github.com/igraph
+* http://igraph.org
+* Mailing list, stack overflow help.
+
+# Creating and manipulating networks in R/igraph.
+
+## What is a network or graph?
+
+```{r echo = FALSE, results = "hide", message = FALSE}
+set.seed(42)
+library(igraph)
+library(igraphdata)
+data(karate)
+plot(karate, margin = 0)
+```
+
+## More formally:
+
+* `V`: set of vertices
+* `E`: subset of ordered or unordered pairs of vertices. Multiset, really.
+
+## Creating toy networks with `make_graph`
+
+```{r message = FALSE}
+library(igraph)
+```
+
+```{r}
+toy1 <- make_graph(~ A - B, B - C - D, D - E:F:A, A:B - G:H)
+toy1
+plot(toy1)
+```
+
+```{r}
+toy2 <- make_graph(~ A -+ B, B -+ C -+ D +- A:B)
+toy2
+plot(toy2)
+```
+
+## Printout of a graph
+
+```{r}
+toy2
+```
+
+`IGRAPH` means this is a graph object. Next, comes a four letter
+code:
+
+* `U` or `D` for undirected or directed
+* `N` if the graph is named, always use named graphs for real data sets.
+* `W` if the graph is weighted (has a `weight` edge attribute).
+* `B` if the graph is bipartite (has a `type` vertex attribute).
+
+## Attributes
+
+```{r}
+make_ring(5)
+```
+
+* Some graphs have a name (`name` graph attribute), that comes after
+the two dashes.
+* Then the variuos attributes are listed. Attributes
+are metadata that is attached to the vertices, edges, or the graph
+itself.
+* `(v/c)` means that `name` is a vertex attribute, and it is
+character.
+* `(e/.)` means an edge attribute, `(g/.)` means a graph attribute
+* Attribute types: `c` for character, `n` for numeric, `l` for
+logical and `x` (complex) for anything else.
+
+igraph treats some attributes specially. Always start your non-special
+attributes with an uppercase letter.
+
+# Real network data
+
+## Adjacency matrices
+
+```{r}
+A <- matrix(sample(0:1, 100, replace = TRUE), nrow = 10)
+A
+graph_from_adjacency_matrix(A)
+```
+
+## List of edges
+
+```{r}
+L <- matrix(sample(1:10, 20, replace = TRUE), ncol = 2)
+L
+graph_from_edgelist(L)
+```
+
+## Two tables, one for vertices, one for edges
+
+```{r}
+edges <- data.frame(
+  stringsAsFactors = FALSE,
+  from = c("BOS", "JFK", "LAX"),
+  to   = c("JFK", "LAX", "JFK"),
+  Carrier = c("United", "Jetblue", "Virgin America"),
+  Departures = c(30, 60, 121)
+)
+vertices <- data.frame(
+  stringsAsFactors = FALSE,
+  name = c("BOS", "JFK", "LAX"),
+  City = c("Boston, MA", "New York City, NY",
+    "Los Angeles, CA")
+)
+```
+
+```{r}
+edges
+vertices
+```
+
+```{r}
+toy_air <- graph_from_data_frame(edges, vertices = vertices)
+toy_air
+```
+
+The real US airports data set is in the `igraphdata` package:
+
+```{r}
+library(igraphdata)
+data(USairports)
+USairports
+```
+
+Converting it back to tables
+
+```{r}
+as_data_frame(toy_air, what = "edges")
+as_data_frame(toy_air, what = "vertices")
+```
+
+Long data frames
+
+```{r}
+as_long_data_frame(toy_air)
+```
+
+Quickly look at the metadata, without conversion:
+
+```{r}
+V(USairports)[[1:5]]
+E(USairports)[[1:5]]
+```
+
+## Weighted graphs
+
+Numbers (usually real) assigned to edges. E.g. number of departures,
+or number of passengers.
+
+![](images/graph6.png)
+
+http://web.cecs.pdx.edu/~sheard/course/Cs163/Doc/Graphs.html
+
+## Multigraphs
+
+They have multiple (directed) edges between the
+same pair of vertices. A graph that has no multiple edges
+and no loop edges is a simple graph.
+
+![](images/Multi-pseudograph.png)
+
+https://en.wikipedia.org/wiki/Multigraph
+
+Multi-graphs are nasty. Always check if your graph is a multi-graph.
+
+```{r}
+is_simple(USairports)
+sum(which_multiple(USairports))
+sum(which_loop(USairports))
+```
+
+`simplify()` creates a simple graph from a multigraph, in a flexible
+way: you can specify what it should do with the edge attributes.
+
+```{r}
+air <- simplify(USairports, edge.attr.comb =
+  list(Departures = "sum", Seats = "sum", Passengers = "sum", "ignore"))
+is_simple(air)
+summary(air)
+``` 
+
+## Querying and manipulating networks: the `[` and `[[` operators
+
+The `[` operator treats the graph as an adjacency matrix.
+
+```
+    BOS JFK ANC EWR ...
+BOS   .   1   .   1
+JFK   1   .   1   .
+ANC   .   1   .   .
+EWR   1   .   1   .
+...
+```
+
+The `[[` operator treats the graph as an adjacency list.
+
+```
+BOS: JFK, LAX, EWR, MKE, PVD
+JFK: BGR, BOS, SFO, BNA, BUF, SRQ, RIC RDU, MSP
+LAX: DTW, MSY, LAS, FLL, STL,
+...
+```
+
+## Queries
+
+Does an edge exist?
+
+```{r}
+air["BOS", "JFK"]
+air["BOS", "ANC"]
+```
+
+Convert the graph to an adjacency matrix, or just a part of it:
+
+```{r}
+air[c("BOS", "JFK", "ANC"), c("BOS", "JFK", "ANC")]
+```
+
+For weighted graphs, query the edge weight:
+
+```{r}
+E(air)$weight <- E(air)$Passengers
+air["BOS", "JFK"]
+```
+
+All adjacenct vertices of a vertex:
+
+```{r}
+air[["BOS"]]
+air[[, "BOS"]]
+```
+
+## Manipulation
+
+Add an edge (and potentially set its weight):
+```{r}
+air["BOS", "ANC"] <- TRUE
+air["BOS", "ANC"]
+```
+
+Remove an edge:
+```{r}
+air["BOS", "ANC"] <- FALSE
+air["BOS", "ANC"]
+```
+
+Note that you can use all allowed indexing modes, e.g.
+```{r}
+g <- make_empty_graph(10)
+g[-1, 1] <- TRUE
+g
+plot(g)
+```
+
+creates a star graph.
+
+Add vertices to a graph:
+
+```{r}
+g <- make_ring(10) + 2
+plot(g)
+```
+
+Add vertices with attributes:
+
+```{r}
+g <- make_(ring(10), with_vertex_(color = "grey")) +
+  vertices(2, color = "red")
+plot(g)
+```
+
+Add an edge
+
+```{r}
+g <- make_(star(10), with_edge_(color = "grey")) +
+  edge(5, 6, color = "red")
+plot(g)
+```
+
+Add a chain of edges
+
+```{r}
+g <- make_(empty_graph(5)) + path(1,2,3,4,5,1)
+g2 <- make_(empty_graph(5)) + path(1:5, 1)
+g
+g2
+```
+
+## Exercise
+
+Create the wheel graph.
+
+```{r echo = FALSE}
+plot(make_star(11, center = 11, mode = "undirected") + path(1:10, 1))
+```
+
+
+## (A) solution
+
+```{r}
+make_star(11, center = 11, mode = "undirected") + path(1:10, 1)
+```
+
+## Vertex sequences
+
+They are the key objects to manipulate graphs. Vertex sequences
+can be created in various ways. Most frequently used ones:
+
+|expression                 |result                            |
+|:--------------------------|:---------------------------------|
+|`V(air)`                   |All vertices.                     |
+|`V(air)[1,2:5]`            |Vertices in these positions       |
+|`V(air)[degree(air) < 2]`  |Vertices satisfying condition     |
+|`V(air)[nei('BOS')]`       |Neighbors of a vertex             |
+|`V(air)['BOS', 'JFK']`     |Select given vertices             |
+
+## Edge sequences
+
+The same for edges:
+
+|expresssion                |result                                       |
+|:--------------------------|:--------------------------------------------|
+|`E(air)`                   |All edges.                                   |
+|`E(air)[FL %--% CA]`       |Edges between two vertex sets                |
+|`E(air)[FL %->% CA]`       |Edges between two vertex sets, directionally |
+|`E(air, path = P)`         |Edges along a path                           |
+|`E(air)[to('BOS')]`        |Incoming edges of a vertex                   |
+|`E(air)[from('BOS')]`      |Outgoing edges of a vertex                   |
+
+## Manipulate attributes via vertex and edge sequences
+
+```{r}
+FL <- V(air)[grepl("FL$", City)]
+CA <- V(air)[grepl("CA$", City)]
+
+V(air)$color <- "grey"
+V(air)[FL]$color <- "blue"
+V(air)[CA]$color <- "blue"
+
+E(air)[FL %--% CA]
+E(air)$color <- "grey"
+E(air)[FL %--% CA]$color <- "red"
+```
+
+## Quick look at metadata
+
+```{r}
+V(air)[[1:5]]
+E(air)[[1:5]]
+```
+
+# BREAK
+
+## Paths
+
+
+```{r echo = FALSE}
+set.seed(42)
+g <- sample_gnp(12, 0.25)
+l <- layout_nicely(g)
+par(mar=c(0,0,0,0))
+plot(g, margin = 0, layout = l)
+```
+
+## Paths
+
+```{r echo = FALSE}
+pa <- V(g)[11, 2, 12, 8]
+V(g)[pa]$color <- 'green'
+E(g)$color <- 'grey'
+E(g, path = pa)$color <- 'red'
+E(g, path = pa)$width <- 3
+par(mar=c(0,0,0,0))
+plot(g, margin = 0, layout = l)
+```
+
+## Directed paths vs undireted paths
+
+TODO
+
+## Define a path in igraph
+
+TODO
+
+<div class="notes">
+Simple graphs: list vertices
+Multigraphs: need to list edges
+</div>
+
+## Define a path in igraph
+
+```{r}
+set.seed(42)
+g <- sample_gnp(12, 0.25)
+
+pa <- V(g)[11, 2, 12, 8]
+V(g)[pa]$color <- 'green'
+E(g)$color <- 'grey'
+E(g, path = pa)$color <- 'red'
+E(g, path = pa)$width <- 3
+```
+
+## Define a path in igraph
+
+```{r}
+par(mar=c(0,0,0,0))
+plot(g, margin = 0, layout = layout_nicely)
+```
+
+## Shortest paths
+
+```{r echo = FALSE}
+set.seed(42)
+g <- sample_gnp(12, 0.25)
+pa <- V(g)[11, 2, 12, 8]
+V(g)[pa]$color <- 'green'
+E(g)$color <- 'grey'
+E(g, path = pa)$color <- 'red'
+E(g, path = pa)$width <- 3
+par(mar=c(0,0,0,0))
+plot(g, margin = 0, layout = layout_nicely)
+```
+
+## Shortest paths
+
+Length of the shortest path: distance.
+How many planes to get from `PBI` to `BDL`?
+
+```{r}
+air <- delete_edge_attr(air, "weight")
+distances(air, 'PBI', 'ANC')
+```
+
+## Shortest paths
+
+```{r}
+sp <- shortest_paths(air, 'PBI', 'ANC', output = "both")
+sp
+air[[ sp$epath[[1]] ]]
+```
+
+## Shortest paths
+
+```{r}
+all_shortest_paths(air, 'PBI', 'ANC')$res
+```
+
+## Weighted paths
+
+```{r}
+wair <- simplify(USairports, edge.attr.comb = 
+   list(Departures = "sum", Seats = "sum", Passangers = "sum",
+        Distance = "first", "ignore"))
+E(wair)$weight <- E(wair)$Distance
+```
+
+## Weighted (shortest) paths
+
+```{r}
+distances(wair, c('BOS', 'JFK', 'PBI', 'AZO'), 
+                    c('BOS', 'JFK', 'PBI', 'AZO'))
+shortest_paths(wair, from = 'BOS', to = 'AZO')$vpath
+all_shortest_paths(wair, from = 'BOS', to = 'AZO')$res
+```
+
+## Mean path length
+
+```{r}
+mean_distance(air)
+air_dist_hist <- distance_table(air)
+air_dist_hist
+```
+
+## Mean path length
+
+```{r}
+barplot(air_dist_hist$res, names.arg = seq_along(air_dist_hist$res))
+```
+
+## Components
+
+TODO
+
+```{r}
+
+```
+
+## Connected components
+
+TODO
+
+## Strongly connected components
+
+TODO
+
+## 
+
+## Exercise
+
+1. Extract the large (strongly) connected component from the
+   airport graph. Hint: `components()`, `induced_subgraph()`.
+   How many airports are not in this component?
+
+1. In the large connected component, which airport is better
+   connected, `LAX` or `BOS`? I.e. what is the mean number of
+   plane changes that are required if traveling to a uniformly
+   randomly picked airport?
+
+## (A) solution
+
+```{r}
+largest_component <- function(graph) {
+  comps <- components(graph, mode = "strong")
+  gr <- groups(comps)
+  sizes <- vapply(gr, length, 1L)
+  induced_subgraph(graph, gr[[ which.max(sizes) ]])
+}
+sc_air <- largest_component(air)
+```
+
+## (A) solution
+
+```{r}
+table(distances(sc_air, "BOS"))
+table(distances(sc_air, "LAX"))
+```
+
+## (A) solution
+
+```{r}
+mean(as.vector(distances(sc_air, "BOS")))
+mean(as.vector(distances(sc_air, "LAX")))
+```
+
+## Centrality
+
+Finding important vertices in the network (family of concepts)
+
+```{r echo = FALSE}
+par(mar=c(0,0,0,0))
+plot(make_star(11))
+```
+
+## Centrality
+
+```{r echo = FALSE}
+data(kite)
+par(mar=c(0,0,0,0))
+plot(kite)
+```
+
+## Classic centrality measures: degree
+
+```{r}
+data(kite)
+V(kite)$label.cex <- 2
+V(kite)$color <- "white"
+V(kite)$size <- 30
+par(mar=c(0,0,0,0))
+plot(kite)
+```
+
+-----
+
+```{r}
+d <- degree(kite)
+plot(kite, vertex.size = 10 * d, vertex.label = paste0(V(kite)$name, ":", d))
+```
+
+
+## Classic centrality measures: closeness
+
+1 / How many steps do you need to get there?
+
+```{r}
+cl <- closeness(kite)
+```
+
+---
+
+```{r}
+plot(kite, vertex.size = 500 * cl)
+```
+
+## Classic centrality measures: betweenness
+
+How many shortest paths goes through me
+
+```{r}
+btw <- betweenness(kite)
+btw
+```
+---
+
+```{r}
+plot(kite, vertex.size = 3 * btw)
+```
+
+## Eigenvector centrality
+
+Typically for directed. Central vertex: it is cited by central vertices.
+
+```{r}
+ec <- eigen_centrality(kite)$vector
+ec
+cor(ec, d)
+```
+---
+```{r}
+plot(kite, vertex.size = 20 * ec)
+```
+
+## Page Rank
+
+Fixes the practical problems with eigenvector centrality
+
+```{r}
+page_rank(kite)$vector
+```
+
+TODO Chutes and ladders example ???
+
+## Clusters
+
+Finding groups in networks. Dimensionality reduction. Community detection.
+
+We want to find dense groups.
+
+---
+
+<img src="images/communities1.png" width="80%">
+
+## Clusters by hand
+
+```{r}
+graph <- make_graph( ~ A-B-C-D-A, E-A:B:C:D, 
+                       F-G-H-I-F, J-F:G:H:I,
+                       K-L-M-N-K, O-K:L:M:N,
+                       P-Q-R-S-P, T-P:Q:R:S,
+                       B-F, E-J, C-I, L-T, O-T, M-S,
+                       C-P, C-L, I-L, I-P)
+flat_clustering <- make_clusters(
+    graph,
+    c(1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4))
+```
+
+---
+
+```{r}
+flat_clustering
+```
+
+---
+
+```{r}
+flat_clustering[[1]]
+length(flat_clustering)
+sizes(flat_clustering)
+```
+
+---
+
+```{r}
+induced_subgraph(graph, flat_clustering[[1]])
+```
+
+## Hierarchical community structure
+
+Typically produced by top-down or bottom-up clustering algorithms.
+
+The outcome can be represented as a *dendrogram*,
+a tree-like diagram that illustrates the order in which the clusters
+are merged (in the bottom-up case) or split (in the top-down case).
+
+---
+
+<img src="images/communities2.png" width="100%">
+
+## Clustering quality measures
+
+- External quality measures: require ground truth
+- Internal quality measures: require assumption about *good*
+clusters.
+
+## External quality measures
+
+Measure                       | Type       | Range      | igraph name
+------------------------------|------------|------------|----------------
+Rand index                    | similarity | 0 to 1     | `rand`
+Adjusted Rand index           | similarity | -0.5 to 1  | `adjusted.rand`
+Split-join distance           | distance   | 0 to 2n    | `split.join`
+Variation of information      | distance   | 0 to log n | `vi` |
+Normalized mutual information | similarity | 0 to 1     | `nmi`
+
+## External quality measures
+
+```{r}
+data(karate)
+karate
+karate <- delete_edge_attr(karate, "weight")
+```
+---
+```{r}
+ground_truth <- make_clusters(karate, V(karate)$Faction)
+length(ground_truth)
+ground_truth
+```
+
+## Exercise (hard)
+
+Write a naive clustering method that classifies vertices
+into two groups, based on two center vertices. Put the two
+centers in separate clusters, and other vertices in the
+cluster whose center is closer to it.
+
+```{r}
+cluster_naive2 <- function(graph, center1, center2) {
+  # ...
+}
+```
+
+## Solution
+
+```{r}
+cluster_naive2 <- function(graph, center1, center2) {
+  dist <- distances(graph, c(center1, center2))
+  cl <- apply(dist, 2, which.min)
+  make_clusters(graph, cl)
+}
+dist_memb <- cluster_naive2(karate, 'John A', 'Mr Hi')
+dist_memb
+```
+
+## Rand index
+
+Check if pairs of vertices are classified correctly
+
+```{r}
+rand_index <- compare(ground_truth, dist_memb, method = "rand")
+rand_index
+```
+
+## Rand index
+
+Random clusterings
+
+```{r}
+random_partition <- function(n, k = 2) { sample(k, n, replace = TRUE) }
+total <- numeric(100)
+for (i in seq_len(100)) {
+  c1 <- random_partition(100)
+  c2 <- random_partition(100)
+  total[i] <- compare(c1, c2, method = "rand")
+}
+mean(total)
+```
+
+## Adjusted Rand index
+
+```{r}
+total <- numeric(100)
+for (i in seq_len(100)) {
+  c1 <- random_partition(100)
+  c2 <- random_partition(100)
+  total[i] <- compare(c1, c2, method = "adjusted.rand")
+}
+mean(total)
+```
+
+## Adjusted rand index
+
+```{r}
+compare(ground_truth, dist_memb, method = "adjusted.rand")
+```
+
+## Internal quality metrics: density
+
+```{r}
+edge_density(karate)
+subgraph_density <- function(graph, vertices) {
+  sg <- induced_subgraph(graph, vertices)
+  edge_density(sg)
+}
+```
+
+```{r}
+subgraph_density(karate, ground_truth[[1]])
+subgraph_density(karate, ground_truth[[2]])
+```
+
+## Internal quality metrics: modularity
+
+Uses a null model
+
+$$Q(G) = \frac{1}{2m} \sum_{i=1}^n \sum_{j=1}^n \left( A_{ij} - p_{ij} \right) \delta_{ij}$$
+
+$A_{ij}$: Adjacency matrix
+
+$\delta_{ij}$: $i$ and $j$ are in the same cluster
+
+$p_{ij}$ expected value for an $(i,j)$ edge from the null model
+
+## Modularity
+
+Common null model: degree-sequence (configuration) model
+
+$$Q(G) = \frac{1}{2m} \sum_{i=1}^n \sum_{j=1}^n \left( A_{ij} - \frac{k_i k_j}{2m} \right)
+       \delta_{ij}$$
+
+## Modularity in igraph
+
+```{r}
+modularity(ground_truth)
+modularity(karate, membership(ground_truth))
+```
+
+Well behaving:
+
+```{r}
+modularity(karate, rep(1, gorder(karate)))
+modularity(karate, seq_len(gorder(karate)))
+```
+
+## Heuristic algorithms
+
+Edge-betweenness clustering
+
+Exact modularity optimization
+
+Greedy agglomerative algorithm to maximize modularity
+
+## Edge-betweenness clustering
+
+```{r}
+dendrogram <- cluster_edge_betweenness(karate)
+dendrogram
+```
+---
+```{r}
+membership(dendrogram)
+```
+---
+```{r}
+compare_all <- function(cl1, cl2) {
+  methods <- eval(as.list(args(compare))$method)
+  vapply(methods, compare, 1.0, comm1 = cl1, comm2 = cl2)
+}
+compare_all(dendrogram, ground_truth)
+```
+---
+```{r}
+cluster_memb <- cut_at(dendrogram, no = 2)
+compare_all(cluster_memb, ground_truth)
+clustering <- make_clusters(karate, membership = cluster_memb)
+```
+
+## Edge-betweenness clustering
+
+```{r}
+V(karate)[Faction == 1]$shape <- "circle"
+V(karate)[Faction == 2]$shape <- "square"
+plot(clustering, karate)
+```
+---
+```{r}
+plot_dendrogram(dendrogram, direction = "downwards")
+```
+
+## Exact modularity maximization
+
+```{r}
+optimal <- cluster_optimal(karate)
+modularity(clustering)
+modularity(optimal)
+modularity(ground_truth)
+```
+
+## Heuristic modularity optimization
+
+```{r}
+dend_fast <- cluster_fast_greedy(karate)
+compare_all(dend_fast, ground_truth)
+```
+---
+```{r}
+plot_dendrogram(dend_fast)
+```
+
+## Visualization
+
+Visualization of networks, layout algorithms. Visualization of large graphs,
+using results from community structure detection. Visualization with other
+R packages, or tools, like D3.js, Gephi, etc.
+
+TODO
+
+- Layout algorithms, force-directed
+- Trees
+- How to export to d3
+- How to export to Gephi
+- DiagrammeR
+
+## Random graph models.
+
+TODO
+
+Classic models, stochastic block models, mixed
+membership stochastic block models and their inference. Hierarchical
+random graphs.
+
+- Why random graphs are important
+- Classic models
+- Stochastic block models
+- Hierarchical random graphs
+
+## Statistical methods
+
+TODO
+
+Statistical methods: graph embeddings, graph matching, graphlets,
+graphons. Temporal networks and change-point detection. Connections to
+matrix factorizations.
+
+- Embeddings, Dan's chapter from the book
+- Graph matching, Vince's chapter from the book
+- Graphlets
+- Scan statistics for change point detection
