@@ -570,7 +570,7 @@ E(g, path = pa)$color <- 'red'
 E(g, path = pa)$width <- 3
 ```
 
-## Define a path in igraph
+----
 
 ```{r}
 par(mar=c(0,0,0,0))
@@ -591,7 +591,7 @@ par(mar=c(0,0,0,0))
 plot(g, margin = 0, layout = layout_nicely)
 ```
 
-## Shortest paths
+----
 
 Length of the shortest path: distance.
 How many planes to get from `PBI` to `BDL`?
@@ -601,7 +601,7 @@ air <- delete_edge_attr(air, "weight")
 distances(air, 'PBI', 'ANC')
 ```
 
-## Shortest paths
+----
 
 ```{r}
 sp <- shortest_paths(air, 'PBI', 'ANC', output = "both")
@@ -609,7 +609,7 @@ sp
 air[[ sp$epath[[1]] ]]
 ```
 
-## Shortest paths
+----
 
 ```{r}
 all_shortest_paths(air, 'PBI', 'ANC')$res
@@ -646,7 +646,7 @@ air_dist_hist <- distance_table(air)
 air_dist_hist
 ```
 
-## Mean path length
+----
 
 ```{r}
 barplot(air_dist_hist$res, names.arg = seq_along(air_dist_hist$res))
@@ -654,26 +654,46 @@ barplot(air_dist_hist$res, names.arg = seq_along(air_dist_hist$res))
 
 ## Components
 
-TODO
+<img src="images/Pseudoforest.png" with="70%">
+
+David Eppstein, public domain
 
 ```{r}
 
 ```
 
-## Connected components
-
-TODO
-
 ## Strongly connected components
 
-TODO
+<img src="images/scc.jpg" width="70%">
 
-## 
+http://www.greatandlittle.com/studios/
+
+----
+
+```{r}
+co <- components(air, mode = "weak")
+co$csize
+groups(co)[[2]]
+```
+
+----
+
+```{r}
+co <- components(air, mode = "strong")
+co$csize
+```
+
+## Bow-tie structure of a directed graph
+
+<img src="images/bowtie-page.png" width="65%">
+
+http://webdatacommons.org/hyperlinkgraph/2012-08/topology.html
 
 ## Exercise
 
 1. Extract the large (strongly) connected component from the
-   airport graph. Hint: `components()`, `induced_subgraph()`.
+   airport graph, as a separate graph.
+   Hint: `components()`, `induced_subgraph()`.
    How many airports are not in this component?
 
 1. In the large connected component, which airport is better
@@ -1146,11 +1166,27 @@ Graph: `layout` (a numeric matrix), `margin`, `palette` (for vertex color),
 
 ## Vertex shapes
 
-TODO
+```{r}
+shapes()
+```
+
+----
+
+```{r}
+shapes <- setdiff(shapes(), "")
+g <- make_ring(length(shapes))
+set.seed(42)
+plot(g, vertex.shape=shapes, vertex.label=shapes, vertex.label.dist=1,
+     vertex.size=15, vertex.size2=15,
+     vertex.pie=lapply(shapes, function(x) if (x=="pie") 2:6 else 0),
+     vertex.pie.color=list(heat.colors(5)))
+```
 
 ## Layout algorithms
 
 Layout lagorithm: place the vertices in a way, such that 
+
+* nodes are distributed evenly
 * edges have about the same length
 * connected vertices are closer to each other
 * edges are not crossing
@@ -1159,50 +1195,201 @@ This is really hard, often impossible!
 
 ## Force-directed algorithms
 
-TODO
-
-```{r}
+```{r echo = FALSE}
+lat <- make_lattice(c(5,5))
+layout(rbind(1:2,3:4))
+par(mar=c(0,0,0,0))
+set.seed(42); plot(lat, layout = layout_with_fr(lat, niter = 1))
+set.seed(42); plot(lat, layout = layout_with_fr(lat, niter = 5))
+set.seed(42); plot(lat, layout = layout_with_fr(lat, niter = 10))
+set.seed(42); plot(lat, layout = layout_with_fr(lat, niter = 20))
 ```
 
 ## Trees
 
-TODO
+```{r}
+tree <- make_tree(20, 3)
+plot(tree, layout=layout_as_tree)
+```
+
+----
+
+```{r}
+plot(tree, layout = layout_as_tree(tree, flip.y = FALSE))
+```
+
+----
+
+```{r}
+plot(tree, layout = layout_as_tree(tree, circular = TRUE))
+```
+
+----
+
+```{r echo = FALSE}
+## Data taken from http://tehnick-8.narod.ru/dc_clients/
+DC <- graph_from_literal("DC++" -+
+                "LinuxDC++":"BCDC++":"EiskaltDC++":"StrongDC++":"DiCe!++",
+                "LinuxDC++" -+ "FreeDC++", "BCDC++" -+ "StrongDC++",
+                "FreeDC++" -+ "BMDC++":"EiskaltDC++",
+                "StrongDC++" -+ "AirDC++":"zK++":"ApexDC++":"TkDC++",
+                "StrongDC++" -+ "StrongDC++ SQLite":"RSX++",
+                "ApexDC++" -+ "FlylinkDC++ ver <= 4xx",
+                "ApexDC++" -+ "ApexDC++ Speed-Mod":"DiCe!++",
+                "StrongDC++ SQLite" -+ "FlylinkDC++ ver >= 5xx",
+                "ApexDC++ Speed-Mod" -+ "FlylinkDC++ ver <= 4xx",
+                "ApexDC++ Speed-Mod" -+ "GreylinkDC++",
+                "FlylinkDC++ ver <= 4xx" -+ "FlylinkDC++ ver >= 5xx",
+                "FlylinkDC++ ver <= 4xx" -+ AvaLink,
+                "GreylinkDC++" -+ AvaLink:"RayLinkDC++":"SparkDC++":PeLink)
+
+## Use edge types
+E(DC)$lty <- 1
+E(DC)["BCDC++" %->% "StrongDC++"]$lty <- 2
+E(DC)["FreeDC++" %->% "EiskaltDC++"]$lty <- 2
+E(DC)["ApexDC++" %->% "FlylinkDC++ ver <= 4xx"]$lty <- 2
+E(DC)["ApexDC++" %->% "DiCe!++"]$lty <- 2
+E(DC)["StrongDC++ SQLite" %->% "FlylinkDC++ ver >= 5xx"]$lty <- 2
+E(DC)["GreylinkDC++" %->% "AvaLink"]$lty <- 2
+
+## Layers, as on the plot
+layers <- list(c("DC++"),
+               c("LinuxDC++", "BCDC++"),
+               c("FreeDC++", "StrongDC++"),
+               c("BMDC++", "EiskaltDC++", "AirDC++", "zK++", "ApexDC++",
+                 "TkDC++", "RSX++"),
+               c("StrongDC++ SQLite", "ApexDC++ Speed-Mod", "DiCe!++"),
+               c("FlylinkDC++ ver <= 4xx", "GreylinkDC++"),
+               c("FlylinkDC++ ver >= 5xx", "AvaLink", "RayLinkDC++",
+                 "SparkDC++", "PeLink"))
+
+## Check that we have all nodes
+all(sort(unlist(layers)) == sort(V(DC)$name))
+
+## Add some graphical parameters
+V(DC)$color <- "white"
+V(DC)$shape <- "rectangle"
+V(DC)$size <- 20
+V(DC)$size2 <- 10
+V(DC)$label <- lapply(V(DC)$name, function(x)
+                      paste(strwrap(x, 12), collapse="\n"))
+E(DC)$arrow.size <- 0.5
+```
+
+```{r}
+summary(DC)
+lay1 <-  layout_with_sugiyama(DC, layers=apply(sapply(layers,
+                        function(x) V(DC)$name %in% x), 1, which))
+```
+
+----
+
+```{r}
+par(mar = rep(0, 4))
+plot(DC, layout = lay1$layout, vertex.label.cex = 0.5)
+```
+
+----
+
+```{r}
+plot(lay1$extd_graph, vertex.label.cex=0.5)
+```
 
 ## Slightly bigger networks
 
 ```{r}
 data(UKfaculty)
 UKfaculty
+```
+
+----
+
+```{r}
 plot(UKfaculty, layout = layout_with_graphopt)
 ```
 
-TODO
+----
+
+```{r}
+cl_uk <- cluster_louvain(as.undirected(UKfaculty))
+cl_gr <- contract(UKfaculty, mapping = cl_uk$membership)
+E(cl_gr)$weight <- count_multiple(cl_gr)
+cl_grs <- simplify(cl_gr)
+E(cl_grs)$weight
+```
+
+----
+
+```{r}
+plot(cl_grs, edge.width = E(cl_grs)$weight / 200, edge.curved = .2)
+```
+
+----
+
+```{r}
+subs <- lapply(groups(cl_uk), induced_subgraph, graph = UKfaculty)
+summary(subs[[1]])
+```
+
+----
+
+```{r}
+plot(subs[[1]])
+```
 
 ## Exporting and importing graphs
 
 `read_graph()` and `write_graph()`.
 
-File formats: TODO
+Imports: edge list, Pajek, GraphML, GML, DL, ...
 
------
+Exports: edge list, Pajek, GraphML, GML, DOT, Leda, ...
 
 Helpful packages: `rgexf`, `intergraph`, `DiagrammeR`, `networkD3`.
 
-## How to export to D3
+## The `networkD3` package
 
-TODO
+```{r}
+library(networkD3)
+d3_net <- simpleNetwork(as_data_frame(karate, what = "edges")[, 1:3])
+d3_net
+```
 
-## The networkD3 package
+## The `DiagrammeR` package
 
-TODO
+```{r}
+library(DiagrammeR)
+```
+
+----
+
+```{r}
+df_kar <- as_data_frame(karate, what = "both")
+df_kar$vertices <- cbind(node = rownames(df_kar$vertices),
+                         df_kar$vertices)
+dg <- create_graph(
+  nodes_df = df_kar$vertices,
+  edges_df = df_kar$edges
+)
+render_graph(dg, width = 800, height = 600)
+```
 
 ## How to export to Gephi
 
-TODO
+```{r}
+library(rgexf)
+df_fac <- as_data_frame(UKfaculty, what = "both")
+df_fac$vertices <- cbind(seq_len(gorder(UKfaculty)), df_fac$vertices)
+output <- "images/UKfaculty.gexf"
+write.gexf(nodes = df_fac$vertices, edges = df_fac$edges[,1:2], 
+           edgesAtt = df_fac$edges[,-(1:2), drop = FALSE],
+           output = output)
+```
 
 ## A network viz tutorial 
 
 Highly recommended:
+
 https://github.com/kateto/R-Network-Visualization-Workshop
 
 # Questions?
