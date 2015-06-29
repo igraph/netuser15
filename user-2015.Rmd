@@ -14,12 +14,14 @@ vignette: >
 ---
 
 ```{r, setup, echo = FALSE, message = FALSE}
-knitr::opts_chunk$set(
+library(knitr)
+library(igraph)
+opts_chunk$set(
   prompt = FALSE,
   comment = "#>",
-  global.par = TRUE,
   tidy = FALSE)
-options(width = 75)
+options(width = 73)
+igraph_options(graph.margin = 0, margin = 0)
 ```
 
 ## How to follow this tutorial
@@ -51,7 +53,7 @@ install.packages("diagrammeR")
 * Visualization
 * Questions
 
-##   Why networks?
+## Why networks?
 
 Sometimes connections are important, even more important than
 (the properties of) the things they connect.
@@ -78,7 +80,8 @@ http://morganlinton.com/wp-content/uploads/2013/12/twitter-facebook-branding2.pn
 
 ![](images/389px-Network_Community_Structure.svg.png)
 
-https://en.wikipedia.org/wiki/Community_structure#/media/File:Network_Community_Structure.svg
+https://en.wikipedia.org/wiki/Community_structure#/
+media/File:Network_Community_Structure.svg
 
 <!-- ## Example 5: Detection of unusual activity -->
 
@@ -91,6 +94,7 @@ https://en.wikipedia.org/wiki/Community_structure#/media/File:Network_Community_
 * https://github.com/igraph
 * http://igraph.org
 * Mailing list, stack overflow help.
+* Open GitHub issues for bugs
 
 # Creating and manipulating networks in R/igraph.
 
@@ -101,6 +105,7 @@ set.seed(42)
 library(igraph)
 library(igraphdata)
 data(karate)
+par(mar=c(0,0,0,0))
 plot(karate, margin = 0)
 ```
 
@@ -118,12 +123,24 @@ library(igraph)
 ```{r}
 toy1 <- make_graph(~ A - B, B - C - D, D - E:F:A, A:B - G:H)
 toy1
+```
+
+----
+
+```{r}
 plot(toy1)
 ```
+
+----
 
 ```{r}
 toy2 <- make_graph(~ A -+ B, B -+ C -+ D +- A:B)
 toy2
+```
+
+----
+
+```{r}
 plot(toy2)
 ```
 
@@ -155,19 +172,29 @@ itself.
 * `(v/c)` means that `name` is a vertex attribute, and it is
 character.
 * `(e/.)` means an edge attribute, `(g/.)` means a graph attribute
+
+-----
+
+```{r}
+make_ring(5)
+```
 * Attribute types: `c` for character, `n` for numeric, `l` for
 logical and `x` (complex) for anything else.
-
-igraph treats some attributes specially. Always start your non-special
+* igraph treats some attributes specially. Always start your non-special
 attributes with an uppercase letter.
 
-# Real network data
+## Real network data
 
 ## Adjacency matrices
 
 ```{r}
 A <- matrix(sample(0:1, 100, replace = TRUE), nrow = 10)
 A
+```
+
+-----
+
+```{r}
 graph_from_adjacency_matrix(A)
 ```
 
@@ -176,6 +203,11 @@ graph_from_adjacency_matrix(A)
 ```{r}
 L <- matrix(sample(1:10, 20, replace = TRUE), ncol = 2)
 L
+```
+
+-----
+
+```{r}
 graph_from_edgelist(L)
 ```
 
@@ -197,15 +229,26 @@ vertices <- data.frame(
 )
 ```
 
+-----
+
 ```{r}
 edges
+```
+
+-----
+
+```{r}
 vertices
 ```
+
+-----
 
 ```{r}
 toy_air <- graph_from_data_frame(edges, vertices = vertices)
 toy_air
 ```
+
+----
 
 The real US airports data set is in the `igraphdata` package:
 
@@ -215,12 +258,21 @@ data(USairports)
 USairports
 ```
 
+----
+
 Converting it back to tables
 
 ```{r}
 as_data_frame(toy_air, what = "edges")
+```
+
+-----
+
+```{r}
 as_data_frame(toy_air, what = "vertices")
 ```
+
+-----
 
 Long data frames
 
@@ -228,10 +280,17 @@ Long data frames
 as_long_data_frame(toy_air)
 ```
 
+-----
+
 Quickly look at the metadata, without conversion:
 
 ```{r}
 V(USairports)[[1:5]]
+```
+
+----
+
+```{r}
 E(USairports)[[1:5]]
 ```
 
@@ -256,11 +315,15 @@ https://en.wikipedia.org/wiki/Multigraph
 
 Multi-graphs are nasty. Always check if your graph is a multi-graph.
 
+-----
+
 ```{r}
 is_simple(USairports)
 sum(which_multiple(USairports))
 sum(which_loop(USairports))
 ```
+
+-----
 
 `simplify()` creates a simple graph from a multigraph, in a flexible
 way: you can specify what it should do with the edge attributes.
@@ -277,21 +340,22 @@ summary(air)
 The `[` operator treats the graph as an adjacency matrix.
 
 ```
-    BOS JFK ANC EWR ...
+    BOS JFK ANC EWR . . .
 BOS   .   1   .   1
 JFK   1   .   1   .
 ANC   .   1   .   .
 EWR   1   .   1   .
-...
+. . .
 ```
+-----
 
 The `[[` operator treats the graph as an adjacency list.
 
-```
+```{r eval = FALSE}
 BOS: JFK, LAX, EWR, MKE, PVD
 JFK: BGR, BOS, SFO, BNA, BUF, SRQ, RIC RDU, MSP
 LAX: DTW, MSY, LAS, FLL, STL,
-...
+. . .
 ```
 
 ## Queries
@@ -302,6 +366,8 @@ Does an edge exist?
 air["BOS", "JFK"]
 air["BOS", "ANC"]
 ```
+
+-----
 
 Convert the graph to an adjacency matrix, or just a part of it:
 
@@ -316,10 +382,17 @@ E(air)$weight <- E(air)$Passengers
 air["BOS", "JFK"]
 ```
 
+----
+
 All adjacenct vertices of a vertex:
 
 ```{r}
 air[["BOS"]]
+```
+
+----
+
+```{r}
 air[[, "BOS"]]
 ```
 
@@ -337,15 +410,17 @@ air["BOS", "ANC"] <- FALSE
 air["BOS", "ANC"]
 ```
 
+----
+
 Note that you can use all allowed indexing modes, e.g.
 ```{r}
 g <- make_empty_graph(10)
 g[-1, 1] <- TRUE
 g
-plot(g)
 ```
-
 creates a star graph.
+
+----
 
 Add vertices to a graph:
 
@@ -353,6 +428,8 @@ Add vertices to a graph:
 g <- make_ring(10) + 2
 plot(g)
 ```
+
+----
 
 Add vertices with attributes:
 
@@ -362,6 +439,8 @@ g <- make_(ring(10), with_vertex_(color = "grey")) +
 plot(g)
 ```
 
+----
+
 Add an edge
 
 ```{r}
@@ -369,6 +448,8 @@ g <- make_(star(10), with_edge_(color = "grey")) +
   edge(5, 6, color = "red")
 plot(g)
 ```
+
+----
 
 Add a chain of edges
 
@@ -386,7 +467,6 @@ Create the wheel graph.
 ```{r echo = FALSE}
 plot(make_star(11, center = 11, mode = "undirected") + path(1:10, 1))
 ```
-
 
 ## (A) solution
 
@@ -429,7 +509,11 @@ CA <- V(air)[grepl("CA$", City)]
 V(air)$color <- "grey"
 V(air)[FL]$color <- "blue"
 V(air)[CA]$color <- "blue"
+```
 
+----
+
+```{r}
 E(air)[FL %--% CA]
 E(air)$color <- "grey"
 E(air)[FL %--% CA]$color <- "red"
@@ -439,6 +523,11 @@ E(air)[FL %--% CA]$color <- "red"
 
 ```{r}
 V(air)[[1:5]]
+```
+
+----
+
+```{r}
 E(air)[[1:5]]
 ```
 
@@ -467,19 +556,6 @@ par(mar=c(0,0,0,0))
 plot(g, margin = 0, layout = l)
 ```
 
-## Directed paths vs undireted paths
-
-TODO
-
-## Define a path in igraph
-
-TODO
-
-<div class="notes">
-Simple graphs: list vertices
-Multigraphs: need to list edges
-</div>
-
 ## Define a path in igraph
 
 ```{r}
@@ -487,6 +563,7 @@ set.seed(42)
 g <- sample_gnp(12, 0.25)
 
 pa <- V(g)[11, 2, 12, 8]
+
 V(g)[pa]$color <- 'green'
 E(g)$color <- 'grey'
 E(g, path = pa)$color <- 'red'
@@ -552,6 +629,11 @@ E(wair)$weight <- E(wair)$Distance
 ```{r}
 distances(wair, c('BOS', 'JFK', 'PBI', 'AZO'), 
                     c('BOS', 'JFK', 'PBI', 'AZO'))
+```
+
+----
+
+```{r}
 shortest_paths(wair, from = 'BOS', to = 'AZO')$vpath
 all_shortest_paths(wair, from = 'BOS', to = 'AZO')$res
 ```
@@ -645,19 +727,19 @@ plot(kite)
 ## Classic centrality measures: degree
 
 ```{r}
-data(kite)
 V(kite)$label.cex <- 2
-V(kite)$color <- "white"
+V(kite)$color <- V(kite)$frame.color <- "grey"
 V(kite)$size <- 30
-par(mar=c(0,0,0,0))
-plot(kite)
+par(mar=c(0,0,0,0)) ; plot(kite)
 ```
 
------
+-------
 
 ```{r}
 d <- degree(kite)
-plot(kite, vertex.size = 10 * d, vertex.label = paste0(V(kite)$name, ":", d))
+par(mar = c(0,0,0,0))
+plot(kite, vertex.size = 10 * d, vertex.label =
+       paste0(V(kite)$name, ":", d))
 ```
 
 
@@ -669,10 +751,10 @@ plot(kite, vertex.size = 10 * d, vertex.label = paste0(V(kite)$name, ":", d))
 cl <- closeness(kite)
 ```
 
----
+-----
 
 ```{r}
-plot(kite, vertex.size = 500 * cl)
+par(mar=c(0,0,0,0)); plot(kite, vertex.size = 500 * cl)
 ```
 
 ## Classic centrality measures: betweenness
@@ -683,10 +765,11 @@ How many shortest paths goes through me
 btw <- betweenness(kite)
 btw
 ```
----
+
+-----
 
 ```{r}
-plot(kite, vertex.size = 3 * btw)
+par(mar=c(0,0,0,0)); plot(kite, vertex.size = 3 * btw)
 ```
 
 ## Eigenvector centrality
@@ -698,9 +781,11 @@ ec <- eigen_centrality(kite)$vector
 ec
 cor(ec, d)
 ```
----
+
+-----
+
 ```{r}
-plot(kite, vertex.size = 20 * ec)
+par(mar=c(0,0,0,0)); plot(kite, vertex.size = 20 * ec)
 ```
 
 ## Page Rank
@@ -711,17 +796,15 @@ Fixes the practical problems with eigenvector centrality
 page_rank(kite)$vector
 ```
 
-TODO Chutes and ladders example ???
-
 ## Clusters
 
 Finding groups in networks. Dimensionality reduction. Community detection.
 
 We want to find dense groups.
 
----
+-----
 
-<img src="images/communities1.png" width="80%">
+<img src="images/communities1.png" width="70%">
 
 ## Clusters by hand
 
@@ -732,18 +815,29 @@ graph <- make_graph( ~ A-B-C-D-A, E-A:B:C:D,
                        P-Q-R-S-P, T-P:Q:R:S,
                        B-F, E-J, C-I, L-T, O-T, M-S,
                        C-P, C-L, I-L, I-P)
+```
+
+----
+
+```{r}
+par(mar=c(0,0,0,0)); plot(graph)
+```
+
+----
+
+```{r}
 flat_clustering <- make_clusters(
     graph,
     c(1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4))
 ```
 
----
+-----
 
 ```{r}
 flat_clustering
 ```
 
----
+-----
 
 ```{r}
 flat_clustering[[1]]
@@ -751,7 +845,7 @@ length(flat_clustering)
 sizes(flat_clustering)
 ```
 
----
+-----
 
 ```{r}
 induced_subgraph(graph, flat_clustering[[1]])
@@ -765,7 +859,7 @@ The outcome can be represented as a *dendrogram*,
 a tree-like diagram that illustrates the order in which the clusters
 are merged (in the bottom-up case) or split (in the top-down case).
 
----
+-----
 
 <img src="images/communities2.png" width="100%">
 
@@ -792,14 +886,16 @@ data(karate)
 karate
 karate <- delete_edge_attr(karate, "weight")
 ```
----
+
+-----
+
 ```{r}
 ground_truth <- make_clusters(karate, V(karate)$Faction)
 length(ground_truth)
 ground_truth
 ```
 
-## Exercise (hard)
+## Exercise
 
 Write a naive clustering method that classifies vertices
 into two groups, based on two center vertices. Put the two
@@ -821,6 +917,11 @@ cluster_naive2 <- function(graph, center1, center2) {
   make_clusters(graph, cl)
 }
 dist_memb <- cluster_naive2(karate, 'John A', 'Mr Hi')
+```
+
+----
+
+```{r}
 dist_memb
 ```
 
@@ -907,6 +1008,8 @@ modularity(ground_truth)
 modularity(karate, membership(ground_truth))
 ```
 
+----
+
 Well behaving:
 
 ```{r}
@@ -928,11 +1031,15 @@ Greedy agglomerative algorithm to maximize modularity
 dendrogram <- cluster_edge_betweenness(karate)
 dendrogram
 ```
----
+
+-----
+
 ```{r}
 membership(dendrogram)
 ```
----
+
+-----
+
 ```{r}
 compare_all <- function(cl1, cl2) {
   methods <- eval(as.list(args(compare))$method)
@@ -940,23 +1047,27 @@ compare_all <- function(cl1, cl2) {
 }
 compare_all(dendrogram, ground_truth)
 ```
----
+
+-----
+
 ```{r}
 cluster_memb <- cut_at(dendrogram, no = 2)
 compare_all(cluster_memb, ground_truth)
 clustering <- make_clusters(karate, membership = cluster_memb)
 ```
 
-## Edge-betweenness clustering
+----
 
 ```{r}
 V(karate)[Faction == 1]$shape <- "circle"
 V(karate)[Faction == 2]$shape <- "square"
-plot(clustering, karate)
+par(mar=c(0,0,0,0)); plot(clustering, karate)
 ```
----
+
+-----
+
 ```{r}
-plot_dendrogram(dendrogram, direction = "downwards")
+par(mar=c(0,0,0,0)); plot_dendrogram(dendrogram, direction = "downwards")
 ```
 
 ## Exact modularity maximization
@@ -974,16 +1085,14 @@ modularity(ground_truth)
 dend_fast <- cluster_fast_greedy(karate)
 compare_all(dend_fast, ground_truth)
 ```
----
+
+-----
+
 ```{r}
-plot_dendrogram(dend_fast)
+plot_dendrogram(dend_fast, direction = "downwards")
 ```
 
 # Visualization
-
-Good visualization is important for EDA.
-
-Publication quality visualization is *not* a goal for us.
 
 ## Plotting parameters
 
@@ -991,10 +1100,11 @@ Can be set globally:
 
 ```{r}
 igraph_options(edge.color = "black")
-data(karate)
-plot(karate)
+data(karate) ; par(mar=c(0,0,0,0)); plot(karate)
 ```
----
+
+-----
+
 For a graph as an attribute:
 
 ```{r}
@@ -1003,7 +1113,9 @@ V(karate)$label.color <- "white"
 E(karate)$color <- "grey"
 plot(karate)
 ```
----
+
+-----
+
 As an argument to `plot()`:
 ```{r}
 plot(karate, edge.color = "black", vertex.color = "#00B7FF", vertex.label.color = "black")
@@ -1019,15 +1131,20 @@ plot(karate, vertex.color = membership(clustering))
 
 Others: `r_pal()`, `sequential_pal()`, `diverging_pal()`.
 
-## Graphical parameters for vertices
+## Graphical parameters
 
-TODO
+Vertices: `size`, `size`, `color`, `frame.color`, `shape` (circle, square, rectangle, pie, 
+raster, none), `label`, `label.family`, `label.font`, `label.cex`, `label.dist`,
+`label.degree`, `label.color`.
 
-## Graphical parameters for edges 
+Edges: `color`, `width`, `arrow.size`, `arrow.width`, `lty`, `label`, 
+`label.family`, `label.font`, `label.cex`, `label.color`, `label.x`, `label.y`,
+`curved`, `arrow.mode`, `loop.angle`, `loop.angle2`.
 
-TODO
+Graph: `layout` (a numeric matrix), `margin`, `palette` (for vertex color),
+`rescale`, `asp`, `frame`, `main` (title), `sub` (title), `xlab`, `ylab`.
 
-## Graphical parameters for the whole graph
+## Vertex shapes
 
 TODO
 
@@ -1047,6 +1164,10 @@ TODO
 ```{r}
 ```
 
+## Trees
+
+TODO
+
 ## Slightly bigger networks
 
 ```{r}
@@ -1063,11 +1184,15 @@ TODO
 
 File formats: TODO
 
----
+-----
 
 Helpful packages: `rgexf`, `intergraph`, `DiagrammeR`, `networkD3`.
 
 ## How to export to D3
+
+TODO
+
+## The networkD3 package
 
 TODO
 
