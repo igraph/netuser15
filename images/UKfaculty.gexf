@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gexf xmlns="http://www.gexf.net/1.2draft" xmlns:viz="http://www.gexf.net/1.1draft/viz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
-  <meta lastmodifieddate="2015-06-29">
+  <meta lastmodifieddate="2015-06-30">
     <creator>NodosChile</creator>
     <description>A graph file writing in R using "rgexf"</description>
     <keywords>gexf graph, NodosChile, R, rgexf</keywords>

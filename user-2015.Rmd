@@ -128,7 +128,7 @@ toy1
 ----
 
 ```{r}
-plot(toy1)
+par(mar = c(0,0,0,0)); plot(toy1)
 ```
 
 ----
@@ -141,7 +141,7 @@ toy2
 ----
 
 ```{r}
-plot(toy2)
+par(mar = c(0,0,0,0)); plot(toy2)
 ```
 
 ## Printout of a graph
@@ -426,7 +426,7 @@ Add vertices to a graph:
 
 ```{r}
 g <- make_ring(10) + 2
-plot(g)
+par(mar = c(0,0,0,0)); plot(g)
 ```
 
 ----
@@ -436,7 +436,7 @@ Add vertices with attributes:
 ```{r}
 g <- make_(ring(10), with_vertex_(color = "grey")) +
   vertices(2, color = "red")
-plot(g)
+par(mar = c(0,0,0,0)); plot(g)
 ```
 
 ----
@@ -446,7 +446,7 @@ Add an edge
 ```{r}
 g <- make_(star(10), with_edge_(color = "grey")) +
   edge(5, 6, color = "red")
-plot(g)
+par(mar = c(0,0,0,0)); plot(g)
 ```
 
 ----
@@ -465,6 +465,7 @@ g2
 Create the wheel graph.
 
 ```{r echo = FALSE}
+par(mar=c(0,0,0,0))
 plot(make_star(11, center = 11, mode = "undirected") + path(1:10, 1))
 ```
 
@@ -654,17 +655,13 @@ barplot(air_dist_hist$res, names.arg = seq_along(air_dist_hist$res))
 
 ## Components
 
-<img src="images/Pseudoforest.png" with="70%">
+<img src="images/Pseudoforest.png" with="65%">
 
 David Eppstein, public domain
 
-```{r}
-
-```
-
 ## Strongly connected components
 
-<img src="images/scc.jpg" width="70%">
+<img src="images/scc.jpg" width="65%">
 
 http://www.greatandlittle.com/studios/
 
@@ -701,7 +698,10 @@ http://webdatacommons.org/hyperlinkgraph/2012-08/topology.html
    plane changes that are required if traveling to a uniformly
    randomly picked airport?
 
-## (A) solution
+1. Which airport is the best connected one? Which one is the 
+   worst (within the strongly connected component)?
+
+## Solution
 
 ```{r}
 largest_component <- function(graph) {
@@ -713,18 +713,37 @@ largest_component <- function(graph) {
 sc_air <- largest_component(air)
 ```
 
-## (A) solution
+----
 
 ```{r}
 table(distances(sc_air, "BOS"))
 table(distances(sc_air, "LAX"))
 ```
 
-## (A) solution
+----
 
 ```{r}
 mean(as.vector(distances(sc_air, "BOS")))
 mean(as.vector(distances(sc_air, "LAX")))
+```
+
+----
+
+```{r}
+D <- distances(sc_air)
+sort(rowMeans(D))[1:10]
+```
+
+----
+
+```{r}
+sort(rowMeans(D), decreasing = TRUE)[1:10]
+```
+
+----
+
+```{r}
+V(sc_air)[[names(sort(rowMeans(D), decreasing = TRUE)[1:10])]]
 ```
 
 ## Centrality
@@ -816,7 +835,14 @@ Fixes the practical problems with eigenvector centrality
 page_rank(kite)$vector
 ```
 
-## Clusters
+## Exercise
+
+Create a table that contains the top 10 most central 
+airports according to all these centrality measures.
+
+# Clusters
+
+## Why finding groups
 
 Finding groups in networks. Dimensionality reduction. Community detection.
 
@@ -1109,14 +1135,16 @@ compare_all(dend_fast, ground_truth)
 -----
 
 ```{r}
-plot_dendrogram(dend_fast, direction = "downwards")
+par(mar = c(0,0,0,0)); plot_dendrogram(dend_fast, direction = "downwards")
 ```
 
 # Visualization
 
 ## Plotting parameters
 
-Can be set globally:
+----
+
+Globally
 
 ```{r}
 igraph_options(edge.color = "black")
@@ -1125,29 +1153,30 @@ data(karate) ; par(mar=c(0,0,0,0)); plot(karate)
 
 -----
 
-For a graph as an attribute:
+Graph parameter
 
-```{r}
-V(karate)$color <- "DarkOliveGreen"
-V(karate)$label.color <- "white"
-E(karate)$color <- "grey"
-plot(karate)
+```{r fig.width = 6}
+V(karate)$color <- "DarkOliveGreen" ; E(karate)$color <- "grey"
+par(mar=c(0,0,0,0)) ; plot(karate)
 ```
 
 -----
 
 As an argument to `plot()`:
-```{r}
-plot(karate, edge.color = "black", vertex.color = "#00B7FF", vertex.label.color = "black")
+```{r fig.width = 6}
+par(mar = c(0,0,0,0))
+plot(karate, edge.color = "black", vertex.color = "#00B7FF",
+     vertex.label.color = "black")
 ```
 
 ## igraph color palettes
 
-Can be set as a graph attribute:
 ```{r}
 karate$palette <- categorical_pal(length(clustering))
-plot(karate, vertex.color = membership(clustering))
+par(mar = c(0,0,0,0)); plot(karate, vertex.color = membership(clustering))
 ```
+
+----
 
 Others: `r_pal()`, `sequential_pal()`, `diverging_pal()`.
 
@@ -1172,10 +1201,22 @@ shapes()
 
 ----
 
-```{r}
+```{r echo = FALSE}
 shapes <- setdiff(shapes(), "")
 g <- make_ring(length(shapes))
-set.seed(42)
+```
+
+```{r eval = FALSE}
+plot(g, vertex.shape=shapes, vertex.label=shapes, vertex.label.dist=1,
+     vertex.size=15, vertex.size2=15,
+     vertex.pie=lapply(shapes, function(x) if (x=="pie") 2:6 else 0),
+     vertex.pie.color=list(heat.colors(5)))
+```
+
+----
+
+```{r echo = FALSE}
+par(mar = c(0,0,0,0))
 plot(g, vertex.shape=shapes, vertex.label=shapes, vertex.label.dist=1,
      vertex.size=15, vertex.size2=15,
      vertex.pie=lapply(shapes, function(x) if (x=="pie") 2:6 else 0),
@@ -1209,19 +1250,14 @@ set.seed(42); plot(lat, layout = layout_with_fr(lat, niter = 20))
 
 ```{r}
 tree <- make_tree(20, 3)
-plot(tree, layout=layout_as_tree)
+par(mar = c(0,0,0,0)); plot(tree, layout=layout_as_tree)
 ```
 
 ----
 
 ```{r}
-plot(tree, layout = layout_as_tree(tree, flip.y = FALSE))
-```
-
-----
-
-```{r}
-plot(tree, layout = layout_as_tree(tree, circular = TRUE))
+l <- layout_as_tree(tree, circular = TRUE)
+par(mar = c(0,0,0,0)); plot(tree, layout = l)
 ```
 
 ----
@@ -1274,6 +1310,7 @@ V(DC)$size2 <- 10
 V(DC)$label <- lapply(V(DC)$name, function(x)
                       paste(strwrap(x, 12), collapse="\n"))
 E(DC)$arrow.size <- 0.5
+invisible()
 ```
 
 ```{r}
@@ -1292,7 +1329,7 @@ plot(DC, layout = lay1$layout, vertex.label.cex = 0.5)
 ----
 
 ```{r}
-plot(lay1$extd_graph, vertex.label.cex=0.5)
+par(mar = c(0,0,0,0)); plot(lay1$extd_graph, vertex.label.cex=0.5)
 ```
 
 ## Slightly bigger networks
@@ -1305,7 +1342,7 @@ UKfaculty
 ----
 
 ```{r}
-plot(UKfaculty, layout = layout_with_graphopt)
+par(mar = c(0,0,0,0)); plot(UKfaculty, layout = layout_with_graphopt)
 ```
 
 ----
@@ -1321,7 +1358,8 @@ E(cl_grs)$weight
 ----
 
 ```{r}
-plot(cl_grs, edge.width = E(cl_grs)$weight / 200, edge.curved = .2)
+par(mar = c(0,0,0,0)); plot(cl_grs, edge.width=E(cl_grs)$weight / 200,
+            edge.curved = .2, vertex.size = sizes(cl_uk) * 2)
 ```
 
 ----
@@ -1334,8 +1372,18 @@ summary(subs[[1]])
 ----
 
 ```{r}
-plot(subs[[1]])
+par(mar=c(0,0,0,0)); plot(subs[[1]])
 ```
+
+## Exercise
+
+A minimum spanning tree is a graph without cycle, that has the minimal 
+weight sum among all spanning trees of the graph.
+
+Try to visualize the airport network using the minimal spanning tree.
+`mst()` calculates the (or a) minimum spanning tree. Hint: what will
+you use as weight? Do you really want a minimum spanning tree, or a 
+maximum spanning tree?
 
 ## Exporting and importing graphs
 
@@ -1392,7 +1440,7 @@ Highly recommended:
 
 https://github.com/kateto/R-Network-Visualization-Workshop
 
-# Questions?
+## Questions?
 
-### Ask a question: http://igraph.org/r/#help
-### Report a bug: http://igraph.org/r/#contribute
+Ask a question: http://igraph.org/r/#help
+Report a bug: http://igraph.org/r/#contribute
