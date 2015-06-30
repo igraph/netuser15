@@ -1442,5 +1442,10 @@ https://github.com/kateto/R-Network-Visualization-Workshop
 
 ## Questions?
 
-Ask a question: http://igraph.org/r/#help
-Report a bug: http://igraph.org/r/#contribute
+Ask a question:
+
+http://igraph.org/r/#help
+
+Report a bug:
+
+http://igraph.org/r/#contribute

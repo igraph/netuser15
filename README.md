@@ -10,6 +10,9 @@
   [user-2015.Rmd](user-2015.Rmd) file
   (or clone this repo), and open it in R Studio or the R IDE of
   your choice.
+* Alternatively download only the R source from
+  [user-2015.R](user-2015.R) and copy and paste it
+  into your R session.
 
 ## Software needed
 
