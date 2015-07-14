@@ -166,7 +166,7 @@ make_ring(5)
 
 * Some graphs have a name (`name` graph attribute), that comes after
 the two dashes.
-* Then the variuos attributes are listed. Attributes
+* Then the various attributes are listed. Attributes
 are metadata that is attached to the vertices, edges, or the graph
 itself.
 * `(v/c)` means that `name` is a vertex attribute, and it is
@@ -384,7 +384,7 @@ air["BOS", "JFK"]
 
 ----
 
-All adjacenct vertices of a vertex:
+All adjacent vertices of a vertex:
 
 ```{r}
 air[["BOS"]]
@@ -1225,7 +1225,7 @@ plot(g, vertex.shape=shapes, vertex.label=shapes, vertex.label.dist=1,
 
 ## Layout algorithms
 
-Layout lagorithm: place the vertices in a way, such that 
+Layout algorithm: place the vertices in a way, such that 
 
 * nodes are distributed evenly
 * edges have about the same length
